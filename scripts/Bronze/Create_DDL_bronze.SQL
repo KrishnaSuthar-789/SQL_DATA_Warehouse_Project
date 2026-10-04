@@ -13,7 +13,7 @@ IF OBJECT_ID('bronze.crm_cust_info','U') IS NOT NULL
 	DROP TABLE bronze.crm_cust_info;
 CREATE TABLE bronze.crm_cust_info(
 	 cst_id int,
-	 cst_ket varchar(20),
+	 cst_key varchar(20),
 	 cst_firstname varchar(20),
 	 cst_lastname varchar(20),
 	 cst_maritial_status varchar(20),
