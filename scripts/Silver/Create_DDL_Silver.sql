@@ -22,7 +22,7 @@ CREATE TABLE silver.crm_cust_info(
 	 cst_maritial_status varchar(20),
 	 cst_gender varchar(20),
 	 cst_create_date date,
-	 dwh_create_Date date default getdate()
+	 dwh_create_Date datetime default getdate()
 );
 
 IF OBJECT_ID('silver.crm_prd_info','U') IS NOT NULL
@@ -35,7 +35,7 @@ CREATE TABLE silver.crm_prd_info(
 	prd_line varchar(20),
 	prd_start_dt date,
 	prd_end_dt date,
-	 dwh_create_Date date default getdate()
+	 dwh_create_Date datetime default getdate()
 );
 
 IF OBJECT_ID('silver.crm_sales_details','U') IS NOT NULL
@@ -50,7 +50,7 @@ CREATE TABLE silver.crm_sales_details(
 	sls_sales int,
 	sls_quantity int,
 	sls_price decimal(10,2),
-	dwh_create_Date date default getdate()
+	dwh_create_Date datetime default getdate()
 );
 
 IF OBJECT_ID('silver.erp_CUST_AZ12','U') IS NOT NULL
@@ -59,7 +59,7 @@ CREATE TABLE silver.erp_CUST_AZ12(
 	CID varchar(20),
 	BDATE date,
 	GEN varchar(20),
-	dwh_create_Date date default getdate()
+	dwh_create_Date datetime default getdate()
 );
 
 IF OBJECT_ID('silver.erp_LOC_A101','U') IS NOT NULL
@@ -67,7 +67,7 @@ IF OBJECT_ID('silver.erp_LOC_A101','U') IS NOT NULL
 CREATE TABLE silver.erp_LOC_A101(
 	CID varchar(20),
 	CNTRY VARCHAR(20),
-	dwh_create_Date date default getdate()
+	dwh_create_Date datetime default getdate()
 );
 
 IF OBJECT_ID('silver.erp_PX_CAT_G1V2','U') IS NOT NULL
@@ -77,5 +77,5 @@ CREATE TABLE silver.erp_PX_CAT_G1V2(
 	CAT varchar(14),
 	SUBCAT varchar(20),
 	MAINTENANCE varchar(20),
-	dwh_create_Date date default getdate()
+	dwh_create_Date datetime default getdate()
 );
