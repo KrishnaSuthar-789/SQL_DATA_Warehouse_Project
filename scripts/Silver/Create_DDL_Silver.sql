@@ -1,4 +1,14 @@
-/* Droping the Table if already exist then creating tables inside silver schema */
+/*
+**********************************************
+---------------------------------------------
+DDL SILVER SCRIPT
+---------------------------------------------
+SCRIPT PURPOSE -
+  This script will create tables in the silver layer,
+  it will drop the table if alredy exist 
+***********************************************
+*/
+
 USE Datawarehouse;
 GO
 IF OBJECT_ID('silver.crm_cust_info','U') IS NOT NULL
