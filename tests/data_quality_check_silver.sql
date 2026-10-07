@@ -1,11 +1,21 @@
 /*
 **************************************************************
-
+Quality Checks
 --------------------------------------------------------------
   Script Purpose: 
-    This scrip is used to perfrom analysis on the RAW data 
-    without making any changes in the data to check the
-    data quality and consistency.
+    This scrip performs various quality checks for data consistency,
+	accuracy and standardization across the silver layer.
+	It checks for:
+    - Nulls or duplicates Primary key
+	- Unwanted leading and trailing spaces in string
+	- Data standardization and consistency 
+	- Invalid dates and dates out of range
+	- Data consistency for joining tables
+
+Usage:
+	- Run the script after data is loaded in bronze layer
+	- Make the necessary transformations before loading in
+	  silver layer.
 --------------------------------------------------------------
 
 ***************************************************************
