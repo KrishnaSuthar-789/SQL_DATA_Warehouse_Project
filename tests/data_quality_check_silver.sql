@@ -1,218 +1,160 @@
 /*
-**************************************************************
+===============================================================================
 Quality Checks
---------------------------------------------------------------
-  Script Purpose: 
-    This scrip performs various quality checks for data consistency,
-	accuracy and standardization across the silver layer.
-	It checks for:
-    - Nulls or duplicates Primary key
-	- Unwanted leading and trailing spaces in string
-	- Data standardization and consistency 
-	- Invalid dates and dates out of range
-	- Data consistency for joining tables
+===============================================================================
+Script Purpose:
+    This script performs various quality checks for data consistency, accuracy, 
+      and standardization across the silver layer. 
+	It includes checks for:
+    - Null or duplicate primary keys.
+    - Unwanted spaces in string fields.
+    - Data standardization and consistency.
+    - Invalid date ranges and orders.
+    - Data consistency between related fields.
 
-Usage:
-	- Run the script after data is loaded in bronze layer
-	- Make the necessary transformations before loading in
-	  silver layer.
---------------------------------------------------------------
-
-***************************************************************
+Usage Notes:
+    - Run these checks after data loading Silver Layer.
+    - Investigate and resolve any discrepancies found during the checks.
+===============================================================================
 */
 
-/* 
-	- Quality Analysis of the raw data 
-	- Table Name: crm_cust_info 	
-*/
+-- ====================================================================
+-- Checking 'silver.crm_cust_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    cst_id,
+    COUNT(*) 
+FROM silver.crm_cust_info
+GROUP BY cst_id
+HAVING COUNT(*) > 1 OR cst_id IS NULL;
 
---Checking for duplicates in customer id
-SELECT * FROM (
-	SELECT * , ROW_NUMBER() OVER(PARTITION BY cst_id ORDER BY cst_create_date DESC) rn
-	FROM bronze.crm_cust_info
-	) t
-WHERE rn > 1;
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    cst_key 
+FROM silver.crm_cust_info
+WHERE cst_key != TRIM(cst_key);
 
--- Checking in duplicates in customer key
-SELECT *
-FROM (
-	SELECT * ,ROW_NUMBER() OVER(PARTITION BY cst_key ORDER BY cst_create_date DESC) rn
-	FROM bronze.crm_cust_info
-	) t
-WHERE rn > 1;
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cst_marital_status 
+FROM silver.crm_cust_info;
 
--- checking for leading and trailing spaces 
-SELECT cst_firstname
-FROM bronze.crm_cust_info
-WHERE cst_firstname != TRIM(cst_firstname);
-
-SELECT cst_lastname
-FROM bronze.crm_cust_info
-WHERE cst_lastname != TRIM(cst_lastname);
-
-SELECT cst_maritial_status
-FROM bronze.crm_cust_info
-WHERE cst_maritial_status != TRIM(cst_maritial_status);
-
-SELECT cst_gender
-FROM bronze.crm_cust_info
-WHERE cst_gender != TRIM(cst_gender);
-
-/* 
-	- Quality Analysis of the raw data 
-	- Table Name: crm_prd_info 	
-*/
-
-SELECT *
-FROM bronze.crm_prd_info;
-
-SELECT prd_id,COUNT(*)
-FROM bronze.crm_prd_info
+-- ====================================================================
+-- Checking 'silver.crm_prd_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    prd_id,
+    COUNT(*) 
+FROM silver.crm_prd_info
 GROUP BY prd_id
 HAVING COUNT(*) > 1 OR prd_id IS NULL;
 
-
-SELECT prd_key,COUNT(*)
-FROM bronze.crm_prd_info
-GROUP BY prd_key
-HAVING COUNT(*) > 1 OR prd_key IS NULL;
-
-SELECT *
-FROM bronze.crm_prd_info
-WHERE prd_key = 'AC-HE-HL-U509'
-
-SELECT *
-FROM bronze.crm_prd_info
-WHERE prd_line <> TRIM(prd_line)
-
-/*
-	- Quality Analysis of the raw data 
-	- Table Name: sls_ord_num 
-*/
-
--- Checking for Nulls in sls_ord_num, sls_ord_key and sls_cust_id 
-
-SELECT sls_ord_num
-FROM bronze.crm_sales_details
-WHERE sls_ord_num IS NULL;
-
-SELECT sls_ord_key
-FROM bronze.crm_sales_details
-WHERE sls_ord_key IS NULL;
-
-
-SELECT sls_cust_id
-FROM bronze.crm_sales_details
-WHERE sls_cust_id IS NULL;
-
--- Checking for incorrect date (According to Int Format)
-
-SELECT DISTINCT
-	sls_order_dt,
-	sls_ship_dt,
-	sls_due_dt
-FROM bronze.crm_sales_details
-WHERE sls_order_dt <= 0 OR  sls_ship_dt <= 0 OR sls_due_dt <= 0
-	OR LEN(sls_order_dt) < 8 OR  LEN(sls_ship_dt) < 8 OR LEN(sls_due_dt) < 8;
-
--- Checking for dates whose order date is more than shipping date
-
+-- Check for Unwanted Spaces
+-- Expectation: No Results
 SELECT 
-	sls_order_dt,
-	sls_ship_dt,
-	sls_due_dt
+    prd_nm 
+FROM silver.crm_prd_info
+WHERE prd_nm != TRIM(prd_nm);
+
+-- Check for NULLs or Negative Values in Cost
+-- Expectation: No Results
+SELECT 
+    prd_cost 
+FROM silver.crm_prd_info
+WHERE prd_cost < 0 OR prd_cost IS NULL;
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    prd_line 
+FROM silver.crm_prd_info;
+
+-- Check for Invalid Date Orders (Start Date > End Date)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_prd_info
+WHERE prd_end_dt < prd_start_dt;
+
+-- ====================================================================
+-- Checking 'silver.crm_sales_details'
+-- ====================================================================
+-- Check for Invalid Dates
+-- Expectation: No Invalid Dates
+SELECT 
+    NULLIF(sls_due_dt, 0) AS sls_due_dt 
 FROM bronze.crm_sales_details
+WHERE sls_due_dt <= 0 
+    OR LEN(sls_due_dt) != 8 
+    OR sls_due_dt > 20500101 
+    OR sls_due_dt < 19000101;
+
+-- Check for Invalid Date Orders (Order Date > Shipping/Due Dates)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_sales_details
 WHERE sls_order_dt > sls_ship_dt 
-	OR sls_ship_dt > sls_due_dt; -- Only if there are no order dues  
+   OR sls_order_dt > sls_due_dt;
 
--- Checking for incorrect sales, price and quantity
+-- Check Data Consistency: Sales = Quantity * Price
+-- Expectation: No Results
+SELECT DISTINCT 
+    sls_sales,
+    sls_quantity,
+    sls_price 
+FROM silver.crm_sales_details
+WHERE sls_sales != sls_quantity * sls_price
+   OR sls_sales IS NULL 
+   OR sls_quantity IS NULL 
+   OR sls_price IS NULL
+   OR sls_sales <= 0 
+   OR sls_quantity <= 0 
+   OR sls_price <= 0
+ORDER BY sls_sales, sls_quantity, sls_price;
 
+-- ====================================================================
+-- Checking 'silver.erp_cust_az12'
+-- ====================================================================
+-- Identify Out-of-Range Dates
+-- Expectation: Birthdates between 1924-01-01 and Today
+SELECT DISTINCT 
+    bdate 
+FROM silver.erp_cust_az12
+WHERE bdate < '1924-01-01' 
+   OR bdate > GETDATE();
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    gen 
+FROM silver.erp_cust_az12;
+
+-- ====================================================================
+-- Checking 'silver.erp_loc_a101'
+-- ====================================================================
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cntry 
+FROM silver.erp_loc_a101
+ORDER BY cntry;
+
+-- ====================================================================
+-- Checking 'silver.erp_px_cat_g1v2'
+-- ====================================================================
+-- Check for Unwanted Spaces
+-- Expectation: No Results
 SELECT 
-	sls_sales,
-	sls_quantity,
-	sls_price
-FROM bronze.crm_sales_details
-WHERE sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
-	OR sls_sales IS NULL OR sls_quantity IS NULL OR sls_price IS NULL
-	OR sls_sales != ABS(sls_price) * sls_quantity;
+    * 
+FROM silver.erp_px_cat_g1v2
+WHERE cat != TRIM(cat) 
+   OR subcat != TRIM(subcat) 
+   OR maintenance != TRIM(maintenance);
 
-/*
-	- Quality Analysis of the raw data 
-	- Table Name: erp_CUST_AZ12 
-*/
-
--- Checking for out of range Bith dates
-SELECT BDATE
-FROM bronze.erp_CUST_AZ12
-WHERE BDATE < '1900-01-01' OR BDATE > '2010-01-01';
-
--- Checking Data for joining 
-
-SELECT CID 
-FROM bronze.erp_CUST_AZ12 
-WHERE CID NOT IN (
-	SELECT cst_key 
-	FROM silver.crm_cust_info
-	); -- Some Id has 'NAS' as prefix which need to be removed 
-
--- Normalizing the data 
-SELECT DISTINCT Gen
-FROM bronze.erp_CUST_AZ12;
-
-
-/*
-	- Quality Analysis of the raw data 
-	- Table Name: erp_LOC_A101 
-*/
-
--- Over view of erp_loc table 
-
-SELECT 
-	CID,
-	CNTRY
-FROM bronze.erp_LOC_A101;
-
--- checking for any differnt customer keys/id
-
-SELECT DISTINCT LEN(CID)
-FROM bronze.erp_LOC_A101; -- joining key length in cust info is 10, here it's 11 which is incorrect
-
--- check data for joining, Output should be blank
-
-SELECT * 
-FROM bronze.erp_LOC_A101
-WHERE CID NOT IN (
-	SELECT cst_key
-	FROM silver.crm_cust_info) -- there is one extra hyphen in the key 
-
-/*
-	- Quality Analysis of the raw data 
-	- Table Name: erp_PX_CAT_G1V2 
-*/
-
--- check data for joining, Output should be blank  
-SELECT ID 
-FROM bronze.erp_PX_CAT_G1V2 
-WHERE ID NOT IN (
-	SELECT cat_id
-	FROM silver.crm_prd_info
-	);
--- Checking data consistency 
-
-SELECT DISTINCT CAT 
-FROM bronze.erp_PX_CAT_G1V2;
-
-SELECT DISTINCT SUBCAT 
-FROM bronze.erp_PX_CAT_G1V2;
-
-SELECT DISTINCT
-	MAINTENANCE
-FROM bronze.erp_PX_CAT_G1V2;
-
--- Checking for unwanted spaces 
-
-SELECT * 
-FROM bronze.erp_PX_CAT_G1V2 
-WHERE TRIM(CAT) <> CAT 
-	OR TRIM(SUBCAT) <> SUBCAT 
-	OR TRIM(MAINTENANCE) <> MAINTENANCE;
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    maintenance 
+FROM silver.erp_px_cat_g1v2;
