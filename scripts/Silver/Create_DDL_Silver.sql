@@ -3,7 +3,7 @@
 ---------------------------------------------
 DDL SILVER SCRIPT
 ---------------------------------------------
-SCRIPT PURPOSE -
+SCRIPT PURPOSE:
 	This script will create tables in the silver layer,
 	it will drop the table if already exists,
 	adding a MetaData column 'DWH_create_date'		
